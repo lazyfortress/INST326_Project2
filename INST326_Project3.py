@@ -5,19 +5,24 @@ from tkinter import ttk
 from tkinter import messagebox
 import json
 import datetime
+import os
 
 class MainWindow(tk.Tk):      # defines the main window of the class 
     def __init__(self):
         super().__init__()
         self.geometry("600x400")
         self.title('Notebook')
-        self.notes = []          # empty list to store the notes 
+        self.notes = []     # empty list to store the notes
+        self.notebook = ""
+        self.notebook_filepath = ""
         
-        
-        # frame and buttons for new notes, opening notebook, and saving notebook
-        
-        new_button = ttk.Button(self, text="New Note", command=self.new_note)
-        new_button.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
+        # frame and buttons for new notes, opening notebook, and saving notebook 
+        #adding a notebook button
+        if self.notebook_filepath == "":
+            new_button = ttk.Button(self, text="New Note", command=self.new_note)
+            new_button.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
+        new_notebook_btn = ttk.Button(self, text="Create Notebook", command=self.new_notebook)
+        new_notebook_btn.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')
         open_button = ttk.Button(self, text="Open Notebook", command=self.open_notebook)
         open_button.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
         save_button = ttk.Button(self, text="Save Notebook", command=self.save_notebook)
@@ -30,20 +35,33 @@ class MainWindow(tk.Tk):      # defines the main window of the class
 # creates new notes 
     def new_note(self):
         note_window = Form(self, self.notes)
-
+    
+    def new_notebook(self):
+        notebook_window = NotebookForm(self)
+        
 # can open existing notes that have been saved
     def open_notebook(self):
         try:
-            with open("notebook.json", "r") as file:
-                self.notes = json.load(file)
-                self.display_notes()
+            files = [f for f in os.listdir(self.notebook_filepath) if f.endswith(".json")]
+            self.notes = []
+            
+            for file in files:
+                file_path = os.path.join(self.notebook_filepath, file)
+                with open(file_path, "r") as file:
+                    note_content = json.load(file)
+                    self.notes.append(note_content)
+                
+            self.display_notes()
+            notebook_exists = True
         except FileNotFoundError:
             messagebox.showwarning("Warning", "No notebook found.")
+            notebook_exists = False
 
     def save_notebook(self):
-        with open("notebook.json", "w") as file:
-            json.dump(self.notes, file)
-
+        return 0
+        #with open("notebook.json", "w") as file:
+         #   json.dump(self.notes, file)
+            
 # allows it to appear on the notebook in the main window
 
     def display_notes(self):
@@ -56,7 +74,58 @@ class MainWindow(tk.Tk):      # defines the main window of the class
     def show_note_details(self, note):
         note_window = Form(self, self.notes, note)
 
-# window with a form for the new note 
+# window with a form for the new note
+
+class NotebookForm(tk.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        self.master.notebook_exists = True
+        self.title('Create New Notebook')
+        #prompt = ttk.Label(notebook_name_prompt, 
+        #      text ="Notebook Title: ")
+        #prompt.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
+        # create widgets for title, text, and tags
+        self.title_label = ttk.Label(self, text="Notebook Title:")
+        self.title_label.pack(side=tk.TOP, padx=10, pady=5)
+        self.title_entry = ttk.Entry(self)
+        self.title_entry.pack(side=tk.TOP, padx=10, pady=5)
+        
+        self.submit_button = ttk.Button(self, text="Initialize Notebook", command=self.initNoteBook)
+        self.submit_button.pack(side=tk.TOP, padx=10, pady=10)
+  
+    def initNoteBook(self):
+        title = self.title_entry.get()
+        timestamp = str(datetime.datetime.now())
+
+        #self.master.new_notebook_save()
+        #new_notebook_save code is used below 
+        directory = "notebook " + title
+        self.master.notebook = title
+        
+        # Parent Directory path  
+        parent_dir = "C:\\Users\\duran\\INST326"
+        
+        # Path  
+        path = os.path.join(parent_dir, directory)
+        self.master.notebook_filepath = path
+            
+        # Create the directory in '/home / User / INST326'  
+        os.mkdir(path)  
+        print("Directory '% s' created" % directory)  
+        
+        #figure out how to print notebook name as a button on main screen
+        #figure out how to add notes to the labeled notebooks and put things in
+        #their file directory
+        
+        # if directory / file that  is to be created already  
+        # exists then 'FileExistsError'  
+        # will be raised by os.mkdir() method  
+
+        # if specified path is invalid 'FileNotFoundError' Error  
+        # will be raised   
+        
+        self.master.display_notes()
+        self.destroy() 
 
 class Form(tk.Toplevel):
     def __init__(self, master, notes, note=None):
