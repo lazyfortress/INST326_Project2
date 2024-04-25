@@ -6,26 +6,46 @@ import json
 import datetime
 import os
 
-class MainWindow(tk.Tk):      # defines the main window of the class 
+class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.geometry("600x400")
-        self.title('Notebook')
+        self.geometry("900x400")
+        self.title('Project 3 Notes and Snippets')
         self.notes = []     # empty list to store the notes
+        self.snippets = []  # empty list to store the code snippets
         
-        # frame and buttons for new notes, opening notebook, and saving notebook 
-        #adding a notebook button
-        new_button = ttk.Button(self, text="New Note", command=self.new_note)
-        new_button.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
-        new_notebook_btn = ttk.Button(self, text="Create Notebook", command=self.new_notebook)
-        new_notebook_btn.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')
-        open_button = ttk.Button(self, text="Open Notebook", command=self.open_notebook)
-        open_button.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
-        save_button = ttk.Button(self, text="Save Notebook", command=self.save_notebook)
-        save_button.pack(side=tk.LEFT, padx=10, pady=10, anchor='center')  # Center the button
+        # Frame for notes and snippets buttons
+        self.buttons_frame = tk.Frame(self)
+        self.buttons_frame.pack(padx=10, pady=10)
 
-        self.note_frame = tk.Frame(self)
-        self.note_frame.pack(padx=10, pady=10)
+        # Buttons for notes
+        new_note_button = ttk.Button(self.buttons_frame, text="New Note", command=self.new_note)
+        new_note_button.pack(side=tk.LEFT, padx=5)
+        open_notebook_button = ttk.Button(self.buttons_frame, text="Open Notebook", command=self.open_notebook)
+        open_notebook_button.pack(side=tk.LEFT, padx=5)
+        save_notebook_button = ttk.Button(self.buttons_frame, text="Save Notebook", command=self.save_notebook)
+        save_notebook_button.pack(side=tk.LEFT, padx=5)
+
+        # Buttons for snippets
+        new_snippet_button = ttk.Button(self.buttons_frame, text="New Snippet", command=self.new_snippet)
+        new_snippet_button.pack(side=tk.LEFT, padx=5)
+        open_snippets_button = ttk.Button(self.buttons_frame, text="Open Snippets", command=self.open_snippets)
+        open_snippets_button.pack(side=tk.LEFT, padx=5)
+        save_snippets_button = ttk.Button(self.buttons_frame, text="Save Snippets", command=self.save_snippets)
+        save_snippets_button.pack(side=tk.LEFT, padx=5)
+
+        # Frame for displaying notes and snippets
+        self.display_area = tk.Frame(self)
+        self.display_area.pack(fill=tk.BOTH, expand=True)
+
+        # Display area for notes
+        self.note_frame = tk.Frame(self.display_area)
+        self.note_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Display area for snippets
+        self.snippet_frame = tk.Frame(self.display_area)
+        self.snippet_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
 
 
 # creates new notes 
@@ -77,10 +97,10 @@ class MainWindow(tk.Tk):      # defines the main window of the class
         else:
             messagebox.showwarning("Warning", "No notebook selected.")
             
-# allows it to appear on the notebook in the main window
+    # allows it to appear on the notebook in the main window
 
     def display_notes(self):
-        for widget in self.note_frame.winfo_children():  # winfo_children --> retrieves all the widgets within the the self note frame
+        for widget in self.note_frame.winfo_children():  # winfo_children retrieves all widgets
             widget.destroy()
         for note in self.notes:
             note_button = ttk.Button(self.note_frame, text=note["title"], command=lambda n=note: self.show_note_details(n))
@@ -88,6 +108,40 @@ class MainWindow(tk.Tk):      # defines the main window of the class
 
     def show_note_details(self, note):
         note_window = Form(self, self.notes, note)
+
+    def new_snippet(self):
+        snippet_window = SnippetForm(self, self.snippets)
+    
+    def open_snippets(self):
+        filepath = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+        if filepath:
+            try:
+                with open(filepath, "r") as file:
+                    self.snippets = json.load(file)
+                self.display_snippets()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to open snippets: {e}")
+    
+    def save_snippets(self):
+        filepath = filedialog.asksaveasfilename(defaultextension=".json",
+                                                filetypes=[("JSON files", "*.json")])
+        if filepath:
+            try:
+                with open(filepath, 'w') as file:
+                    json.dump(self.snippets, file, indent=4)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save snippets: {e}")
+    
+    def display_snippets(self):
+        for widget in self.snippet_frame.winfo_children():
+            widget.destroy()
+        for snippet in self.snippets:
+            snippet_button = ttk.Button(self.snippet_frame, text=snippet["title"], command=lambda sn=snippet: 
+                                        self.show_snippet_details(sn))
+            snippet_button.pack(pady=5)
+
+    def show_snippet_details(self, snippet):
+        snippet_window = SnippetForm(self, self.snippets, snippet)
 
 # window with a form for the new note
 # Notebook class
@@ -287,12 +341,20 @@ class SnippetForm(tk.Toplevel):
         code = self.code_entry.get("1.0", tk.END).strip()
         timestamp = str(datetime.datetime.now())
 
+        changes = {}
         if self.snippet is None:
             self.snippets.append({"title": title, "code": code, "created_at": timestamp, "edit_history": []})
         else:
-            self.snippet["title"] = title
-            self.snippet["code"] = code
-            self.snippet["edit_history"].append({"timestamp": timestamp, "changes": {"title": title, "code": code}})
+            if title != self.snippet["title"]:
+                changes["title"] = title
+            if code != self.snippet["code"]:
+                changes["code"] = code
+
+            if changes:
+                self.snippet["edit_history"].append({"timestamp": timestamp, "changes": changes})
+                self.snippet["title"] = title
+                self.snippet["code"] = code
+
         self.master.save_snippets()
         self.master.display_snippets()
         self.destroy()
