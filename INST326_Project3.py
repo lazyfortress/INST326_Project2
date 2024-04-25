@@ -142,7 +142,7 @@ class NotebookForm(tk.Toplevel):
         self.destroy() 
 
 # Form class
-# Edited to include author functionality
+# Edited to include author functionality and edit history in the GUI
 class Form(tk.Toplevel):
     def __init__(self, master, notes, note=None):
         super().__init__(master)
@@ -173,36 +173,47 @@ class Form(tk.Toplevel):
         self.author_entry = ttk.Entry(self)
         self.author_entry.pack(side=tk.TOP, padx=10, pady=5)
 
-        # Create submit button
+        # Create buttons
         self.submit_button = ttk.Button(self, text="Submit", command=self.submit)
         self.submit_button.pack(side=tk.TOP, padx=10, pady=10)
+
+        self.history_button = ttk.Button(self, text="View Edit History", command=self.show_history)
+        self.history_button.pack(side=tk.TOP, padx=10, pady=5)
 
         if note is not None:
             self.fill_form()
 
     def fill_form(self):
-        self.title_entry.delete(0, tk.END)
-        self.text_entry.delete(1.0, tk.END)
-        self.tags_entry.delete(0, tk.END)
-        self.author_entry.delete(0, tk.END)
-        if self.note:
-            self.title_entry.insert(0, self.note["title"])
-            self.text_entry.insert(tk.END, self.note["text"])
-            self.tags_entry.insert(0, self.note.get("tags", ""))
-            self.author_entry.insert(0, self.note.get("author", ""))
+        # Fill form with existing note details
+        self.title_entry.insert(0, self.note["title"])
+        self.text_entry.insert(tk.END, self.note["text"])
+        self.tags_entry.insert(0, self.note.get("tags", ""))
+        self.author_entry.insert(0, self.note.get("author", ""))
+
+    def show_history(self):
+        history_window = tk.Toplevel(self)
+        history_window.title("Edit History")
+        history_list = ttk.Treeview(history_window, columns=("timestamp", "details"), show="headings")
+        history_list.heading("timestamp", text="Timestamp")
+        history_list.heading("details", text="Details")
+        history_list.pack(fill=tk.BOTH, expand=True)
+
+        for entry in self.note.get("edit_history", []):
+            details = "; ".join([f"{k}: {v}" for k, v in entry["changes"].items()])
+            history_list.insert("", tk.END, values=(entry["timestamp"], details))
 
     def submit(self):
+        # Submit or update note details
         title = self.title_entry.get()
         text = self.text_entry.get("1.0", tk.END).strip()
         tags = self.tags_entry.get().strip()
         author = self.author_entry.get().strip()
         timestamp = str(datetime.datetime.now())
-    
+
         if self.note is None:
-            self.notes.append({"title": title, "text": text, "tags": tags, 
+            self.notes.append({"title": title, "text": text, "tags": tags,
                                "author": author, "created_at": timestamp, "edit_history": []})
         else:
-            # Only record changes for an existing note
             changes = {}
             if title != self.note["title"]:
                 changes["title"] = title
@@ -212,17 +223,15 @@ class Form(tk.Toplevel):
                 changes["tags"] = tags
             if author != self.note["author"]:
                 changes["author"] = author
-    
-            # Update note w/ new values
+
             self.note["title"] = title
             self.note["text"] = text
             self.note["tags"] = tags
             self.note["author"] = author
-    
-            # Append changes to edit history
+
             if changes:
                 self.note["edit_history"].append({"timestamp": timestamp, "changes": changes})
-                
+
         self.master.display_notes()
         self.destroy()
 
