@@ -90,7 +90,7 @@ class MainWindow(tk.Tk):      # defines the main window of the class
         note_window = Form(self, self.notes, note)
 
 # window with a form for the new note
-
+# Notebook class
 class NotebookForm(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
@@ -141,6 +141,8 @@ class NotebookForm(tk.Toplevel):
         self.master.display_notes()
         self.destroy() 
 
+# Form class
+# Edited to include author functionality
 class Form(tk.Toplevel):
     def __init__(self, master, notes, note=None):
         super().__init__(master)
@@ -197,8 +199,8 @@ class Form(tk.Toplevel):
         timestamp = str(datetime.datetime.now())
 
         if self.note is None:
-            self.notes.append({"title": title, "text": text, "tags": tags, "author": author, "created_at": timestamp, 
-            "edit_history":[]})
+            self.notes.append({"title": title, "text": text, "tags": tags, 
+                               "author": author, "created_at": timestamp, "edit_history":[]})
         else:
             self.note["title"] = title
             self.note["text"] = text
@@ -209,7 +211,8 @@ class Form(tk.Toplevel):
             
         self.master.display_notes()
         self.destroy()
-        
+
+# Snippet class
 class SnippetForm(tk.Toplevel):
     def __init__(self, master, snippets, snippet=None):
         super().__init__(master)
