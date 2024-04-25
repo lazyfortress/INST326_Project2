@@ -197,18 +197,32 @@ class Form(tk.Toplevel):
         tags = self.tags_entry.get().strip()
         author = self.author_entry.get().strip()
         timestamp = str(datetime.datetime.now())
-
+    
         if self.note is None:
             self.notes.append({"title": title, "text": text, "tags": tags, 
-                               "author": author, "created_at": timestamp, "edit_history":[]})
+                               "author": author, "created_at": timestamp, "edit_history": []})
         else:
+            # Only record changes for an existing note
+            changes = {}
+            if title != self.note["title"]:
+                changes["title"] = title
+            if text != self.note["text"]:
+                changes["text"] = text
+            if tags != self.note["tags"]:
+                changes["tags"] = tags
+            if author != self.note["author"]:
+                changes["author"] = author
+    
+            # Update note w/ new values
             self.note["title"] = title
             self.note["text"] = text
             self.note["tags"] = tags
             self.note["author"] = author
-            self.note["edit_history"].append({"timestamp": timestamp, "changes": {"title": title, 
-            "text": text, "tags": tags, "author":author}})
-            
+    
+            # Append changes to edit history
+            if changes:
+                self.note["edit_history"].append({"timestamp": timestamp, "changes": changes})
+                
         self.master.display_notes()
         self.destroy()
 
